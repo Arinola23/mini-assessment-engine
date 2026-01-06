@@ -1,0 +1,590 @@
+openapi: 3.0.3
+info:
+  title: Assessment Engine API
+  version: 1.0.0
+  description: |-
+    This API allows admins to create exams and questions, students to submit answers, and retrieve results.
+
+    Authentication is token-based. Include your token in the Authorization header:
+
+    `Authorization: Token <your_token>`
+paths:
+  /api/auth/login/:
+    post:
+      operationId: auth_login_create
+      description: Students login for the exam. Returns a token if credentials are
+        valid.
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+              required:
+              - username
+              - password
+            examples:
+              LoginRequest:
+                value:
+                  username: John Deo
+                  password: John2026@
+                summary: Example login request body
+      security:
+      - tokenAuth: []
+      - tokenAuth: []
+      responses:
+        '201':
+          description: Login successful, returns token
+        '400':
+          description: Invalid credentials
+  /api/auth/register/:
+    post:
+      operationId: auth_register_create
+      description: Register students for the exam. Generates an auth token on successful
+        registration.
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+              required:
+              - username
+              - password
+            examples:
+              RegisterRequest:
+                value:
+                  username: John Deo
+                  password: John2026@
+                summary: Example registration request
+      security:
+      - tokenAuth: []
+      - tokenAuth: []
+      - {}
+      responses:
+        '201':
+          description: Registration successful, returns auth token
+        '400':
+          description: Registration failed
+  /api/exams/:
+    get:
+      operationId: exams_retrieve
+      description: 'Admin-only: Retrieve a list of all exams, each including its nested
+        questions.'
+      tags:
+      - exams
+      security:
+      - tokenAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          description: List of exams with nested questions
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+  /api/exams/{exam_id}/:
+    get:
+      operationId: exams_retrieve_2
+      description: Retrieve exam details for students. Includes all questions but
+        excludes correct answers if configured.
+      parameters:
+      - in: path
+        name: exam_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - exams
+      security:
+      - tokenAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          description: Exam details for a student
+        '401':
+          description: Unauthorized
+        '404':
+          description: Exam not found
+  /api/exams/{exam_id}/delete/:
+    delete:
+      operationId: exams_delete_destroy
+      description: Delete an exam and all its questions (admin only).
+      parameters:
+      - in: path
+        name: exam_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - exams
+      security:
+      - tokenAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          description: Exam successfully deleted
+        '401':
+          description: Unauthorized
+        '404':
+          description: Not Found
+  /api/exams/{exam_id}/submit/:
+    post:
+      operationId: exams_submit_create
+      description: Submit answers for an exam. Key is question ID, value is answer.
+      parameters:
+      - in: path
+        name: exam_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - exams
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                answers:
+                  type: object
+            examples:
+              SubmitExamExample:
+                value:
+                  answers:
+                    '5': Python
+                    '6': def
+                    '7': A variable stores data.
+                summary: Example of submitting answers
+      security:
+      - tokenAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          description: Submission successful
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+        '404':
+          description: Exam not found
+  /api/exams/{exam_id}/update/:
+    put:
+      operationId: exams_update_update
+      description: 'Admin-only: Update an exam''s title, duration, or course. Questions
+        can be omitted if unchanged.'
+      parameters:
+      - in: path
+        name: exam_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - exams
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminUpdateExamRequest'
+            examples:
+              UpdateMathExamExample:
+                value:
+                  title: Math Test
+                  duration: 60
+                  course: Algebra
+                summary: An example of updating an exam without changing questions
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AdminUpdateExamRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AdminUpdateExamRequest'
+        required: true
+      security:
+      - tokenAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          description: Exam updated successfully
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '404':
+          description: Exam not found
+  /api/exams/create/:
+    post:
+      operationId: exams_create_create
+      description: 'Admin-only: Create an exams with questions'
+      tags:
+      - exams
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminExamRequest'
+            examples:
+              CreateMathExamExample:
+                value:
+                  title: Math Test
+                  duration: 60
+                  course: Algebra
+                  questions:
+                  - question_text: What is 2+2?
+                    question_type: text
+                    expected_answer: '4'
+                summary: An example of creating an exam with questions
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AdminExamRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AdminExamRequest'
+        required: true
+      security:
+      - tokenAuth: []
+      - tokenAuth: []
+      responses:
+        '201':
+          description: Exam created successfully
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+  /api/questions/{question_id}/delete/:
+    delete:
+      operationId: questions_delete_destroy
+      description: Delete questions (admin only).
+      parameters:
+      - in: path
+        name: question_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - questions
+      security:
+      - tokenAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          description: Question successfully deleted
+        '401':
+          description: Unauthorized
+        '404':
+          description: Not Found
+  /api/questions/{question_id}/update/:
+    put:
+      operationId: questions_update_update
+      description: 'Admin-only: Update a single question by question_id.'
+      parameters:
+      - in: path
+        name: question_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - questions
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminQuestionRequest'
+            examples:
+              UpdateQuestionExample:
+                value:
+                  question_text: What is 2+2+2?
+                  question_type: text
+                  expected_answer: '6'
+                summary: Example of updating a question's text and answer
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AdminQuestionRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AdminQuestionRequest'
+        required: true
+      security:
+      - tokenAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          description: Question updated successfully
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '404':
+          description: Question not found
+  /api/schema/:
+    get:
+      operationId: schema_retrieve
+      description: |-
+        OpenApi3 schema for this API. Format can be selected via content negotiation.
+
+        - YAML: application/vnd.oai.openapi
+        - JSON: application/vnd.oai.openapi+json
+      parameters:
+      - in: query
+        name: format
+        schema:
+          type: string
+          enum:
+          - json
+          - yaml
+      - in: query
+        name: lang
+        schema:
+          type: string
+          enum:
+          - af
+          - ar
+          - ar-dz
+          - ast
+          - az
+          - be
+          - bg
+          - bn
+          - br
+          - bs
+          - ca
+          - ckb
+          - cs
+          - cy
+          - da
+          - de
+          - dsb
+          - el
+          - en
+          - en-au
+          - en-gb
+          - eo
+          - es
+          - es-ar
+          - es-co
+          - es-mx
+          - es-ni
+          - es-ve
+          - et
+          - eu
+          - fa
+          - fi
+          - fr
+          - fy
+          - ga
+          - gd
+          - gl
+          - he
+          - hi
+          - hr
+          - hsb
+          - ht
+          - hu
+          - hy
+          - ia
+          - id
+          - ig
+          - io
+          - is
+          - it
+          - ja
+          - ka
+          - kab
+          - kk
+          - km
+          - kn
+          - ko
+          - ky
+          - lb
+          - lt
+          - lv
+          - mk
+          - ml
+          - mn
+          - mr
+          - ms
+          - my
+          - nb
+          - ne
+          - nl
+          - nn
+          - os
+          - pa
+          - pl
+          - pt
+          - pt-br
+          - ro
+          - ru
+          - sk
+          - sl
+          - sq
+          - sr
+          - sr-latn
+          - sv
+          - sw
+          - ta
+          - te
+          - tg
+          - th
+          - tk
+          - tr
+          - tt
+          - udm
+          - ug
+          - uk
+          - ur
+          - uz
+          - vi
+          - zh-hans
+          - zh-hant
+      tags:
+      - schema
+      security:
+      - tokenAuth: []
+      - tokenAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/vnd.oai.openapi:
+              schema:
+                type: object
+                additionalProperties: {}
+            application/yaml:
+              schema:
+                type: object
+                additionalProperties: {}
+            application/vnd.oai.openapi+json:
+              schema:
+                type: object
+                additionalProperties: {}
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/submissions/grade/Admin/:
+    get:
+      operationId: submissions_grade_Admin_retrieve
+      description: 'Admin-only: Retrieve all students'' exam submissions.'
+      tags:
+      - submissions
+      security:
+      - tokenAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          description: List of submissions
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+  /api/submissions/grade/student:
+    get:
+      operationId: submissions_grade_student_retrieve
+      description: Retrieve your submission history. Only returns submissions for
+        the authenticated student.
+      tags:
+      - submissions
+      security:
+      - tokenAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          description: List of student submissions
+        '401':
+          description: Unauthorized
+components:
+  schemas:
+    AdminExamRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 255
+        duration:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+        course:
+          type: string
+          minLength: 1
+          maxLength: 100
+        metadata:
+          nullable: true
+        questions:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminQuestionRequest'
+      required:
+      - course
+      - duration
+      - questions
+      - title
+    AdminQuestionRequest:
+      type: object
+      properties:
+        question_text:
+          type: string
+          minLength: 1
+        question_type:
+          $ref: '#/components/schemas/QuestionTypeEnum'
+        expected_answer: {}
+      required:
+      - expected_answer
+      - question_text
+      - question_type
+    AdminUpdateExamRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 255
+        duration:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+        course:
+          type: string
+          minLength: 1
+          maxLength: 100
+        metadata:
+          nullable: true
+      required:
+      - course
+      - duration
+      - title
+    QuestionTypeEnum:
+      enum:
+      - mcq
+      - text
+      type: string
+      description: |-
+        * `mcq` - Multiple Choice
+        * `text` - Text Answer
+  securitySchemes:
+    tokenAuth:
+      type: apiKey
+      in: header
+      name: Authorization
+      description: Token-based authentication with required prefix "Token"
