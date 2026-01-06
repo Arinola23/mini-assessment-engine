@@ -24,7 +24,6 @@ class Question(models.Model):
     question_text = models.TextField()
     question_type = models.CharField(max_length=20, choices=QUESTION_TYPES)
     expected_answer = models.JSONField()
-    # expected_answer = models.TextField()
 
 
     def __str__(self):
